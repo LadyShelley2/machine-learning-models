@@ -17,3 +17,130 @@
 推荐系统的可以分成以下三类：
 
 1. 基于内容的推荐（content-based recommendations）
+
+
+###什么是推荐系统
+
+* Item
+* User
+* Transaction
+
+### 推荐系统的历史
+
+推荐系统和信息检索、预测理论等研究有非常密切的相关性，前者可以看成是后者的延伸研究。推荐系统成为一个独立的学科一般认为从1994年明尼苏达大学GroupLens研究组的 GroupLens 研究系统。该系统有两大重要贡献：一是首次ᨀ出了基于协同过滤
+(Collaborative Filtering)来完成推荐任务的思想，二是为推荐问题建立了一个形式化的模型(见 1.4)。基于该模型的协同过滤推荐引领了之后推荐系统在今后十几年的发展方向。
+
+### 推荐系统评测指标
+
+推荐系统可以用多个指标进行描述，有些可以定量计算，有些只能定性描述。
+
+* 用户满意度。主要通过用户调查或在线实验获得。如GroupLens曾设计调查问卷调查用户对推荐论文结果的感受。电子商务网站可以通过推荐物品点击率、是否购买等信息获得用户满意度。视频网站可以通过点击率、用户停留时间等信息评价用户满意度。
+
+* 预测准确度。最重要的推荐系统离线评测指标。将数据集分成训练集和测试集，计算推荐算法在测试集上的预测准确度。
+  * 评分预测
+  评分预测通过 user 以往对 item 的打分情况，预测对新的 item 的打分情况。评分预测的预测准确度一般通过均方差误差(RMSE)和平均局对误差(MAE)计算，对于测试集中的一个一个 user $u$对 item $i$ 打分，令$r_{ui}$是用户$u$对物品$i$的世纪评分，而$\hat{r_{ui}}$是推荐算法给出的预测评分，则RMSE的定义为:
+
+  $$
+  RMSE=\frac{\sqrt{\Sigma_{u,i\in T}(r_{ui}-\hat{r_{ui}})^2}}{\lvert{T}\rvert}
+  $$
+
+  用绝对值计算预测误差，它的定义为：
+
+  $$
+  MAE=\frac{\Sigma_{u,i\in T}\lvert r_{ui}-\hat{r-{ui}}}{\lvert T\rvert}
+  $$
+
+  * TopN 预测
+  
+  很多网站的推荐服务是提供给用户一个个性化 item 列表，如电影列表，选取 user 最有可能感兴趣的 N 个 item 进行推荐，这种推荐叫做 TopN 推荐。TopN推荐一般通过 准确率(precision)/召回率(recall)度量。
+
+  令$R(u)$是根据用户在训练集上的行为给用户作出的推荐列表，而$T(u)$是用户在测试集上的行为列表，召回率为：
+
+  $$
+  Recall = \frac{\Sigma_{u\in U}\lvert{R(u)\cap T(u)}\rvert}{\Sigma_{u\in U}\lvert T(u)\rvert}
+  $$
+
+  准确率定义为：
+
+  $$
+  Precision = \frac{\Sigma_{u\in U}\lvert{R(u)\cap{T(u)}}\rvert}{\Sigma_{u\in U}\lvert R(u)\rvert}
+  $$
+
+  为了全面评测 TopN 推荐的准确率和召回率，会选取不同的推荐列表长度计算出多组准确率/召回率，然后画出 准确率/召回率 曲线，及
+
+### 推荐系统的关键技术
+
+* content-based，基于内容的推荐。主要思想是认为 user 会喜欢和自己喜欢的 item 类似的 item. 两个 item 是否相似通过比较 item 的内容特征。如一个用户在某电影网站上给喜剧1评价很高，则推荐系统会倾向给用户推荐喜剧2，因为它们都是喜剧。content-based 关于item 特征的提取很多时候基于自然语言处理的相关技术，例如，分词等。
+
+* Collaborative filtering, 协同过滤，是最简单也是最原始的推荐方法。基本思想是向 user A 推荐与其喜好相似的 user B 所喜欢的 item。 主要通过两个 user 的历史打分记录来判断两个用户的喜好是否相同，称为 user-user approach。 同理，通过 item 的历史被打分记录可以判断两个 item 之间的相似性，从而向 user 推荐和其评分比较高的 item 相似的 item, 称为 item-item approach. 这两种方法都是基于近邻思想寻找相似的 item 和 user，同时由于计算简单，可以直接在内存中完成，被归为基于内存(memory-based)的协同过滤方法一类中。随着机器学习方法的发展，越来越多的机器学习模型也被用于推荐系统，与基于内存的方法不同，基于模型(model-based)的方法一般需要实现训练好保存下来，然后进行推荐。常用的model-based方法有矩阵分解等。
+
+* 用户特征(Demographic): 此类方法主要运用 user 的信息进行个性化推荐，例如根据 user 的语言或者年龄向用户推荐不同的信息。
+
+* Knowledge-based，基于专家知识，协同过滤和基于内容的推荐方法可以以相对较小的代价获取推荐内容，但是在一些场景下，比如房屋、汽车、计算机等商品，需要一些专业知识，并且可能会由于评分数据少而效果不好，这些场景下则需要一些专家知识辅助推荐。基于知识的推荐需要用户指定需求，共分为基于约束推荐和基于实例推荐。两者的共同点事都需要用户指定需求，然后系统给出解决方案，不同点是基于约束推荐将用户给出的需求条件作为约束直接过滤，基于实例推荐则通过不同的相似度衡量方法检索出相似的物品。
+
+* Community-based, 基于社团的推荐。根据 user 的社交好友关系进行推荐，本方法的基本思想是比起喜好相同的陌生人，user 更容易和自己的好友形成相似的喜好。腾讯社交广告第二届题目即是通过好友关系推荐广告。
+
+* Hybrid recommender system, 混合推荐系统。多种推荐系统组合。
+
+其中 content-based 和 collaborative filtering 两种是最基础和最常用的方法，本调研主要围绕这两种方法展开。
+
+## Content-based 
+
+Content-based 推荐主要是通过分析 user 之前打过分的 item, 并基于这些 item 的特征挖掘 user 的兴趣，基于挖掘的兴趣对 user 进行其他 item 的推荐，总体来说，Content-based 推荐系统一般分为三步：content analyzer, profile learner, filter component。
+
+* Content analyzer, 主要是对无结构的 item 的内容信息进行预处理，例如对描述 item 的文本，网页等进行处理和表示，以便能够输入到下一个阶段。
+
+* profile learner, 收集到 user 打分过的 item 的内容表示之后，对其进行特征分析和提取，以便挖掘 user 的兴趣点。
+
+* filter component, 通过获得的 user 的兴趣点，对其他 item 过滤并推荐。
+
+### Content-based 方法的优缺点
+
+与协同过滤相比， content-based方法有以下优点：
+
+* User independence，content-based 方法为每一个用户建立一个独立的 profile， 而协同过滤则需要找与其相似的用户，只有相似的用户打分高的 item 才会被推荐。
+
+* transparency，推荐内容可解释，由于推荐的item都是根据某些特征而来，与协同过滤黑盒不同，content-based拥有更好的可解释性。
+
+* New item, content-based 对新的 item 是非常友好的，即使一个 item 没有被其他用户打过分，但content-based 算法仍然可以将其推荐给其他用户，协同过滤做不到。
+
+content-based 也有缺点：
+
+* Limited content analysis，无论是自动构造特征还是人工构造特征，特征的类型和数量都是有限的。一旦没有从内容中分析出有效的特征信息，则无法做出有效地推荐。
+
+* Over-spacialization, content-based 推荐会非常集中于某一类别，无法给用户推荐惊喜的item。越完美的content-based推荐系统越无法向用户推荐惊喜的 item 。
+
+* New user，新用户由于没有打分的 item, 因此也就没有挖掘兴趣点的 content， 因此无法进行有效推荐。
+
+## Collaborative filtering
+
+### Memory-based
+
+### Model-based
+
+#### 矩阵分解
+
+##### SVD分解
+
+##### SVD++
+
+##### SVD free
+
+##### NMF
+
+##### PMF
+
+#### 深度神经网络
+
+##### MLP
+
+##### AE
+
+##### CNN
+
+##### DNN
+
+
+## 推荐系统的评价
+
+## 总结
