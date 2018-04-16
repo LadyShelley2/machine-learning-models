@@ -203,27 +203,164 @@ $$
 c=\argmax_{c_j}\frac{P(c_j)P(i|c_j)}{P(i)}
 $$
 
-此外，决策树、KNN等数据挖掘算法也常用在 content-based推荐应用上。随着 User generated content 的增多，如今日头条等平台，基于自然语言处理相关技术的文档推荐、与社交网络相结合的标签推荐等方法越来越多。
+此外，决策树、KNN等数据挖掘算法也常用在 content-based推荐应用上。随着 User generated content 的增多，如今日头条等平台，基于自然语言处理相关技术的文档推荐、与社交网络相结合的标签推荐等方法越来越多。另外关于content-based serendipity 相关的研究也越来越多。
 
 ## Collaborative filtering
 
-### Memory-based
+与content-based 只用了推荐 user 自身的历史的喜好数据不同，协同过滤也利用了其他用户的历史信息。协同过滤总体来说可以分为基于近邻和基于模型两类，其中基于近邻的方法也被叫做基于内存(memory-based)或者启发式(heuristic-based)。基于近邻的方法分为 user-based 和 item-based 两种。其中 User-based 方法是通过发现与之相似的 user 近邻，将近邻的喜好 item 推荐给 该user。而item-based模型则是通过发现与 user 历史上喜欢的 item 相似的 item，并将其推荐给该 user，关于相似度的衡量有多种方式。基于近邻的方法是直接利用保存的打分情况计算并推荐，与之不同的是 model-based 方法，是建模 user 和 item 之间的关系，学习到一个可以用来预测的模型，常用的用来推荐的模型有很多种，例如贝叶斯聚类、 Latent Semantic Analysis， Latent Dirichlet Allocation, 最大熵， Boltzman机，SVM，SVD分解等等。
+
+基于近邻的协同过滤是最早的协同过滤，拥有简单、有效、稳定等优点。
+
+### 基于近邻的协同过滤
+
+User-based 协同过滤与 item-based 协同过滤同理，此处以 user-based 为例，介绍基于近邻的协同过滤。
+
+常见的推荐系统应用场景为 rating 预测（连续），和分类(like & dislike，离散评分，离散问题)。
+
+#### Rating 预测
+
+User-based 协同过滤是通过找到与 user $u$最相近的 user 集合，利用他们对 item $i$的打分，预测 $u$对$i$的打分$r_{ui}$。假设 user 集合$N_i(u)$是给$i$打分的 user 中与 user $u$ 最相近的 $k$ 个用户，相似度为$w_{uv}$， 则我们估计的 $u$ 对$i$的打分情况如下：
+
+$$
+\hat(r_{ui})=\frac{1}{\lvert{N_i(u)}\rvert}\Sigma_{v\in{N_i(u)}r_{vi}}
+$$
+
+其中我们把每个用户的打分都看成了一样的权重，但相似度高的用户显然应该比相似度低的用户影响更大，因此加权改进如下：
+
+$$
+\hat(r_{ui})=\frac{\Sigma_{v\in N_i(u)w_{uv}r_{vi}}}{\Sigma_{v\in{N_i(u)}\lvert{w_{uv}\rvert}}}
+$$
+
+此外加权还可以采用 $w_{uv}^\alpha$等方式。
+
+此时计算方法中未考虑用户个人打分习惯，有的用户习惯打高分，有的则习惯打低分，可以做 normalize 。
+
+$$
+\hat(r_{ui})=h^{-1}\frac{\Sigma_{v\in N_i(u)w_{uv}r_{vi}}}{\Sigma_{v\in{N_i(u)}\lvert{w_{uv}\rvert}}}
+$$
+
+#### 分类问题
+
+将 rating 离散开，可以将问题看成一个分类问题，分类结果估计如下:
+
+$$
+v_{ir}=\Sigma_{v\in{N_i(u)}}\delta(r_{vi=r}w_{uv})
+$$
+
+对于所有可能的评分，例如1、2、3、4、5,$\delta(r_{vi}=r)=1$, if $r_{vi}=r$,否则等于0。计算出得分最大的rating，则为最后的估计评分。
+
+这种计算方法兼顾了相似度加权，同理考虑到不同人的打分习惯，也是可以先 normalize 一下。
+
+将问题看成回归比看成分类更加保守，但分类更有可能带来惊喜度。
+
+同理，user-based 换成 item，就形成了 Item-based 方法。
+
+#### 相似度衡量
+##### 归一化方法
+* Mean-centering
+$$
+h(r_{ui})=r_{ui}-\bar{r}_u
+$$
+* Z-score normalization
+h(r_{ui})=\frac{r_{ui}-\bar{r_u}}{\sigma_u}
+
+##### 相似度计算
+
+* Cosine similarity
+
+$$
+cos(x_a,x_b)=\frac{x_a^Tx_b}{\lVert{x_a}\rVert\lVert{x_b}\rVert}
+$$
+
+* Pearson Correlation
+$$
+PC(u,v)=\frac{\Sigma_{i\in{I_{uv}}}(r_{ui}-\bar{r}_u)(r_{vi-\bar{r_v}})}{\sqrt{\Sigma_{i\in{I_{uv}}}(r_{ui}-\bar{r_u})^2\Sigma_{i\in{I_{uv}}(r_{vi-\bar{r}_v})^2}}}
+$$
+
+* Other similarity
+还有一些其他的相似度度量方法，例如Adjusted Cosine, Mean Square Difference， Spearman Rank Correlation 等
+
+#### 近邻选择
+近邻选择有不同的方法，常用的几种方法如下：
+
+* Top-N 选择， 选择相似度最高的N个近邻。
+* Threshold，根据阈值选择N个近邻
+* Negative filtering, 对 accuracy 没什么影响，是否使用根据数据集情况确定。
+
+#### 近邻算法的问题
+
+近邻算法存在一些问题，例如覆盖度低、对数据稀疏敏感等问题。
+
+* 覆盖度低，近邻是基于两个用户有共同打分的item上进行的，因此具有一定的局限性，即使两个用户没有共同的item 打分，他们的喜好仍然可能相同，因此推荐 item 的覆盖度会有一些局限性。
+
+* 对稀疏数据敏感，对于新加入的商品和用户，打分记录比较少，在基于紧邻的方法中存在冷启动问题。
+
+为了解决这些问题，可以采用一些其他的方法避免，例如降维技术，基于图理论的方法等。
+
+##### 降维技术
+
+降维常用方法为隐空间特征分解，SVD分解等矩阵分解相关技术，可以直接将打分矩阵分解或者相似度矩阵分解得到隐空间表示，然后再通过内积计算两者的相似度。
+
+##### 基于图的方法
+
+基于图的方法主要将 user 和 item 表示成二分图，如下：
+[./images/bipartite-graph.png]
+
+基于图的方法主要有基于路径的方法（如最短路径、路径数量等）、随机游走方法（Itemrank, 平均最先到达时间等）方法。
 
 ### Model-based
 
 #### 矩阵分解
 
+矩阵分解的核心思想是将用户和商品映射到一个共同的隐空间中，在隐空间中，使用向量内积来建模用户和商品的行为。
+
 ##### SVD分解
+
+SVD分解是常见的矩阵分解方法，将矩阵分为三个矩阵相乘，中间矩阵为奇异值对角阵，左边和右边分别为奇异向量。
+
+[./image/svd.png]
+
+但SVD分解要求矩阵稠密，因此常常需要先填充矩阵，然后再进行SVD分解。
+
+##### FunkSVD
+
+FunkSVD 将矩阵分解为2个低秩的矩阵，分别表示商品和用户在隐空间上的向量表示，通过构造原矩阵和分解后还原矩阵之间的损失函数，使用梯度下降法优化求解。
+
+[./image/funksvd.png]
+
+该方法克服原始SVD需要稠密矩阵的缺点，并降低了复杂度。
+
+##### BiasSVD
+
+基于FunkSVD的优化形式，出现了很多版本，BiasSVD是其中一个比较成功的变形，它考虑了用户的个人偏好，商品的自身偏好。
+
+[./image/biassvd.png]
 
 ##### SVD++
 
-##### SVD free
+[./image/svd++.png]
 
 ##### NMF
 
+非负矩阵分解加入隐向量非负的限制，使用迭代乘子法求解。
+
+[./image/nmf.png]
+
 ##### PMF
 
+[./image/pmf1.png]
+
+[./image/pmf2.png]
+
+[./image/pmf3.png]
+
+[./image/pmf4.png]
+
+[./image/pmf5.png]
+
 #### 深度神经网络
+
+使用深度神经网络进行推荐越来越常见，常见的方法可做如下分类:按照使用神经网络的数量可以分为a.单个神经网络;b.多个神经网络,按照是否与传统推荐算法结合可以分为a.深度学习方法与传统方法相结合（根据结合程度不同分为紧结合和松结合）; b.单独使用深度学习方法。
 
 ##### MLP
 
